@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Stock Dashboard</title>
+
+    <script src="http://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+        crossorigin="anonymous"></script>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
+        crossorigin="anonymous">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp"
+        crossorigin="anonymous">
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+        crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+    <body>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+        <script>
+        // Update the trading chart with new data
+        function tradingPlotFor(ticker) {
+                var route="/api/tradingData?ticker="+ticker;
+                console.log(route)
+                var trace;
+                Plotly.d3.json(route, function(error, response) {
+                            if (error) return console.warn(error);
+                            console.log(response);
+                            trace = {'x': response.dates,
+                                'y': response.price_changes,
+                                'mode': "lines",
+                                "type": "scatter"
+                                }
+                            
+                            });
+                return trace;
+               
+        }
+
+        function drawTradingChart(ticker) {
+
+                        //var plot = document.getElementById('tradingChart');
+                        //plot the ticker
+                        var route="/api/tradingData?ticker="+ticker;
+                        //console.log(route);
+                        Plotly.d3.json(route, function(error, response) {
+                            if (error) return console.warn(error);
+                            console.log(response);
+                        var trace1 = {'x': response.dates,
+                                'y': response.price_changes,
+                                'mode': "lines",
+                                "type": "scatter"
+                                }
+                        var data = [trace1];
+                        console.log(data);
+            
+                        var layout = {
+                                     title: "Daily trading data",
+                                     xaxis: {
+                                                title: "Date"
+                                            },
+                                    yaxis: {
+                                                    title: "% Price Change"
+                                            }
+                                };
+                        Plotly.newPlot("tradingChart", data, layout);
+                            });
+                        
+                        //var trace2 = tradingPlotFor('INX');
+                        var route="/api/tradingData?ticker=INX";
+                        Plotly.d3.json(route, function(error, response) {
+                            if (error) return console.warn(error);
+                            console.log(response);
+                        //var trace2 = {'x': response.dates,
+                        //        'y': response.price_changes,
+                         //       'mode': "lines",
+                          //      "type": "scatter"
+                           //     }
+                        var trace2 = {'y': response.price_changes}
+                        
+                        Plotly.extendTraces("tradingChart", trace2);
+                            });
+                        //var trace3 = tradingPlotFor('IXIC');
+                        
+                  }
+        
+        function calculateRegressionY(x,slope,intercept){
+            var y = slope*x + intercept;
+            return y;
+        }
+
+        function drawPERegressionChart(response) {
+                    console.log("drawing fundamnetals chart");
+                  //var plot = document.getElementById('fundamentalsChart');
+                  var trace1 = {'x': response.pe,
+                                'y': response.returns,
+                                'mode': "markers",
+                                "type": "scatter"
+                            };
+                    
+                    var PEs = response.pe;
+                    var x1 = Math.max.apply(null, PEs);
+                    var x2 = Math.min.apply(null, PEs);
+                    var slope = response.regPE[0];
+                    var intercept = response.regPE[1];
+
+                    var y1 = calculateRegressionY(x1,slope,intercept);
+                    var y2 = calculateRegressionY(x2,slope,intercept);
+                    var lineXdata = [x1,x2];
+                    var lineYdata = [y1,y2];
+
+                    var trace2 = {"x": lineXdata,
+                                "y": lineYdata,
+                                "mode": 'line',
+                                "type": "scatter"
+                            };
+                    
+                    var data = [trace1,trace2];
+                    console.log(data);
+                    var layout = {
+                                     title: "Price-to-Earnings vs Returns",
+                                     xaxis: {
+                                                title: "PE"
+                                            },
+                                    yaxis: {
+                                                    title: "Returns"
+                                            }
+                                };
+                Plotly.newPlot("peRegChart", data, layout);
+                }
+
+        function drawPBRegressionChart(response) {
+
+                    var trace1 = {'x': response.pb,
+                                'y': response.returns,
+                                'mode': "markers",
+                                "type": "scatter"
+                            };
+                    
+                    var PBs = response.pb;
+                    var x1 = Math.max.apply(null, PBs);
+                    var x2 = Math.min.apply(null, PBs);
+                    var slope = response.regPB[0];
+                    var intercept = response.regPB[1];
+
+                    var y1 = calculateRegressionY(x1,slope,intercept);
+                    var y2 = calculateRegressionY(x2,slope,intercept);
+                    var lineXdata = [x1,x2];
+                    var lineYdata = [y1,y2];
+
+                    var trace2 = {"x": lineXdata,
+                                "y": lineYdata,
+
+                                "mode": 'line',
+                                "type": "scatter"
+                            };
+                    
+                    var data = [trace1,trace2];
+                    var layout = {
+                                    title: "Price-to-Bookvalue vs Returns",
+                                    xaxis: {title: "PB"},
+                                    yaxis: {title: "Returns"}
+                                };
+                Plotly.newPlot("pbRegChart", data, layout);
+                }
+
+        function drawFCFRegressionChart(response) {
+                    var trace1 = {'x': response.fcf,
+                                'y': response.returns,
+                                'mode': "markers",
+                                "type": "scatter"
+                            };
+                    
+                    var FCFs = response.fcf;
+                    var x1 = Math.max.apply(null, FCFs);
+                    var x2 = Math.min.apply(null, FCFs);
+                    var slope = response.regFCF[0];
+                    var intercept = response.regFCF[1];
+
+                    var y1 = calculateRegressionY(x1,slope,intercept);
+                    var y2 = calculateRegressionY(x2,slope,intercept);
+                    var lineXdata = [x1,x2];
+                    var lineYdata = [y1,y2];
+
+                    var trace2 = {"x": lineXdata,
+                                "y": lineYdata,
+                                "mode": 'line',
+                                "type": "scatter"
+                            };
+                    
+                    var data = [trace1,trace2];
+                    var layout = {
+                                    title: "Free Cashflow vs Returns",
+                                    xaxis: {title: "FCF"},
+                                    yaxis: {title: "Returns"}
+                                };
+                Plotly.newPlot("fcfRegChart", data, layout);
+                }
+
+        function drawAnalysisTable(response) {
+
+                    console.log("drawing table");
+                    console.log(response);
+
+                    //getting data
+                    var dataTab = [
+                        ["slope","intercept","R value","P value","STD error"],
+                        [response.regPE[0],response.regPE[1], response.regPE[2], response.regPE[3], response.regPE[4]],
+                        [response.regPB[0],response.regPB[1], response.regPB[2], response.regPB[3], response.regPB[4]],
+                        [response.regFCF[0],response.regFCF[1], response.regFCF[2], response.regFCF[3], response.regFCF[4]]
+                    ];
+
+
+                    //getElementsByTagName("analysisTable")[0]
+                    var body = document.getElementsByTagName("body")[0];
+
+                    // create elements <table> and a <tbody>
+                    var tbl     = document.createElement("table");
+                    var tblBody = document.createElement("tbody");
+                    // cells creation
+                    for (var j = 0; j <= 3; j++) {
+                        // table row creation
+                        var row = document.createElement("tr");
+
+                        for (var i = 0; i < 5; i++) {
+                            // create element <td> and text node 
+                            //Make text node the contents of <td> element
+                            // put <td> at end of the table row
+                            var cell = document.createElement("td");  
+                            var cellText = document.createTextNode(dataTab[j][i]); 
+                            cell.appendChild(cellText);
+
+                            row.appendChild(cell);
+                        }
+
+                        //row added to end of table body
+                        tblBody.appendChild(row);
+                    }
+
+                    // append the <tbody> inside the <table>
+                    tbl.appendChild(tblBody);
+                    // put <table> in the <body>
+                    body.appendChild(tbl);
+                    // tbl border attribute to 
+                    tbl.setAttribute("border", "2");
+                    }
+
+
+        function drawFundamentals(ticker) {
+                  //get data
+                  route="/api/fundamentals?ticker="+ticker;
+                  Plotly.d3.json(route, function(error, response) {
+                          if (error) return console.warn(error);
+                          console.log(response);
+                          drawPERegressionChart(response);
+                          drawPBRegressionChart(response);
+                          drawFCFRegressionChart(response);
+                          drawAnalysisTable(response);
+                         });
+                      }
+              
+        // Get new data whenever the dropdown selection changes and draw the dashboard
+        function drawDashboard(ticker) {
+                  console.log(ticker);
+                  drawTradingChart(ticker);
+                  drawFundamentals(ticker);
+                  }
+
+        drawDashboard("A");
+        </script>
+        
+        <div class="input-group">
+            <div class="row">
+                <div class="col-md-12">
+                    <h1>Select a stock</h1>
+                    <select id="selStock" onchange="drawDashboard(this.value)">
+                        <option value="A">A</option>
+                        <option value="AAPL">AAPL</option>
+                        <option value="AMD">AMD</option>
+                        <option value="ARQL">ARQL</option>
+                        <option value="AU">AU</option>
+                        <option value="BHP">BHP</option>
+                        <option value="BLIN">BLIN</option>
+                        <option value="BOSC">BOSC</option>
+                        <option value="BP">BP</option>
+                        <option value="CVX">CVX</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    
+        <div class="row">
+            <div class="col-md-12" style="text-align: center">
+                <h2>Current trading information</h2>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12" style="text-align: center">
+                <div id="tradingChart" style="width: 640px; height: 400px;"></div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12" style="text-align: center">
+                <h2>Fundamentals Analysis</h2>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div id="peRegChart"></div>
+            </div>
+            <div class="col-md-6">
+                <div id="pbRegChart"></div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div id="fcfRegChart"></div>
+            </div>
+            <div class="col-md-6">
+                <div id="analysisTable"></div>
+            </div>
+        </div>
+        
+    </body>
+
+</html>
