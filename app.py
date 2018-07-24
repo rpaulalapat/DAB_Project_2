@@ -22,18 +22,20 @@ from flask_sqlalchemy import SQLAlchemy
 # PyMySQL 
 import pymysql
 
+from config import db_pwd
+from config import AV_apikey
+
 #################################################
 # common variables needed across functions
 #################################################
 app = Flask(__name__)
-AV_API = '5QCXLW3PGIMU5U9H'
 #################################################
 # Database Setup 
 #################################################
 
 pymysql.install_as_MySQLdb()
 # Create Engine and Pass in MySQL Connection
-engine = create_engine("mysql://root:Masala007@localhost:3306/stockuser")
+engine = create_engine("mysql://root:"+db_pwd+"@localhost:3306/stockuser")
 conn = engine.connect()
 
  # def __repr__(self):
@@ -114,7 +116,7 @@ def fundamentals():
 @app.route("/api/tradingData")
 def tradingData():
     ticker = request.args['ticker']
-    url = 'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol='+ticker+'&apikey='+AV_API
+    url = 'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol='+ticker+'&apikey='+AV_apikey
     response = requests.get(url).json()
     data = response['Time Series (Daily)']
     dates = list(data.keys())
