@@ -35,6 +35,7 @@ app = Flask(__name__)
 
 pymysql.install_as_MySQLdb()
 # Create Engine and Pass in MySQL Connection
+#engine = create_engine("mysql://root:"+db_pwd+"@localhost:3306/stockuser")
 engine = create_engine("mysql://root:"+db_pwd+"@localhost:3306/stockuser")
 conn = engine.connect()
 
